@@ -49,12 +49,12 @@ async function checkedCountries() {
 app.get("/", async (req, res) => {
     try {
         const currentUser = await getCurrentUser();
-        checkedCountries();
+        const countries = await checkedCountries();
         const {data, error} = await supabase.from('countries').select("*");
         if(error) {
             console.log('Error', error);
         }else{
-           console.log(currentUser.name)
+           res.send("<h1>Load up the index file</h1>")
         }
     }catch(error) {
         console.error("Unexpected error", error )
