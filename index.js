@@ -7,8 +7,8 @@ import bodyParser from 'body-parser';
 
 // dotenv.config();
 
-const url = process.env.SUPABASE_URL;
-const key = process.env.SUPABASE_KEY;
+const url = "https://asnnkdihhptptvtydaio.supabase.co";
+const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzbm5rZGloaHB0cHR2dHlkYWlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIxOTczNTgsImV4cCI6MjA1Nzc3MzM1OH0.HqKnquzylZJJLPMhbJ3N39tlCSMhOM4ufirIwgwJIF4"
 
 const supabase = createClient(url, key);
 
