@@ -5,12 +5,14 @@ import { createClient } from '@supabase/supabase-js';
 import ejs from 'ejs'
 import bodyParser from 'body-parser';
 
-dotenv.config();
+// dotenv.config();
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_KEY;
 
-const supabase = createClient(url, key)
+const supabase = createClient(url, key);
+
+console.log(url, key)
 
 const app  = express();
 const port = process.env.PORT || 3000;
