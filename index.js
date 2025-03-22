@@ -57,7 +57,7 @@ app.get("/", async (req, res) => {
         if(error) {
             console.log('Error', error);
         }else{
-           res.send("<h1>Load up the index file</h1>")
+           res.send("<h1>This is the new HTML</h1>")
         }
     }catch(error) {
         console.error("Unexpected error", error )
