@@ -27,6 +27,12 @@ let users = [
 
 let currentUserId = 1;
 
+async function getUsersList() {
+    const {data, error} = await supabase.from('users').select('*');
+    console.log("Line 32" + data[0]);
+    users = data;
+}
+
 async function getCurrentUser() {
     const {data, error} = await supabase.from('users').select('*').eq('id', currentUserId);
     if(error) {
@@ -39,7 +45,8 @@ async function getCurrentUser() {
         return;
     }
 
-    return data[0];
+    // return data[0];
+    console.log(data[0])
 }
 
 async function checkedCountries() {
@@ -51,15 +58,17 @@ async function checkedCountries() {
 
 app.get("/", async (req, res) => {
     try {
+        const userList = await getUsersList();
         const currentUser = await getCurrentUser();
         const countries = await checkedCountries();
         const {data, error} = await supabase.from('countries').select("*");
+      
         if(error) {
             console.log('Error', error);
         }else{
            res.render("index.ejs", {
             users: users,
-            error: "Enter error here",
+            error: error,
             color: users.color,
             total: 2,
             countries: countries
@@ -69,6 +78,44 @@ app.get("/", async (req, res) => {
         console.error("Unexpected error", error )
     }
 })
+
+app.post("/user", (req, res) => {
+    res.render("new.ejs", {
+
+    })
+})
+
+app.post("/new", (req, res) => {
+    const newUser = req.body.name;
+    const color = req.body.color;
+    
+    if(!newUser || !color) {
+        return res.status(400).json({error: "Name and colour required"})
+    };
+
+    supabase.from('users').insert([{
+        name: newUser,
+        color: color
+    }])
+    .then(({data, error}) => {
+        if(error) {
+            console.error('Error inserting data', error);
+            return res.status(400).json({error: error.message});
+        }
+
+        console.log("Data inserted succesfully!", data);
+        getUsersList();
+        res.status(200).redirect("/")
+    })
+    .catch(err => {
+        console.error("Unexpected Error", err);
+        res.status(500).json({error: 'Something went wrong'})
+    })
+})
+
+// app.post("/new", (req, res) => {
+//     const newUser = req.body.name;
+    
 
 app.listen(port, () => {
     console.log("Listening on port " + port)
