@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import ejs from 'ejs'
 import bodyParser from 'body-parser';
 
-// dotenv.config();
+dotenv.config();
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_KEY;
@@ -57,7 +57,13 @@ app.get("/", async (req, res) => {
         if(error) {
             console.log('Error', error);
         }else{
-           res.send("<h1>This is the new HTML</h1>")
+           res.render("index.ejs", {
+            users: users,
+            error: "Enter error here",
+            color: users.color,
+            total: 2,
+            countries: countries
+           })
         }
     }catch(error) {
         console.error("Unexpected error", error )
