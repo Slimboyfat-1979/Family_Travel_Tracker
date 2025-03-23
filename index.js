@@ -24,29 +24,11 @@ let users = [
   { id: 2, name: "Henry Smith", color: "green" },
 ];
 
-let currentUserId = 1;
+let currentUserId = null;
 
 async function getUsersList() {
   const { data, error } = await supabase.from("users").select("*");
-  console.log("Line 32" + data[0]);
   users = data;
-}
-
-async function getCurrentUser() {
-  //   const { data, error } = await supabase
-  //     .from("users")
-  //     .select("*")
-  //     .eq("id", currentUserId);
-  //   if (error) {
-  //     console.log("Error fetching user");
-  //     return;
-  //   }
-  //   if (data.length === 0) {
-  //     console.log("No user found");
-  //     return;
-  //   }
-  //   // return data[0];
-  //   console.log("LINE 51" + data[0]);
 }
 
 async function checkedCountries() {
@@ -54,9 +36,8 @@ async function checkedCountries() {
     .from("visited_countries")
     .select("country_code")
     .eq("user_id", currentUserId);
-  data.forEach((d) => {
-    console.log(d.country_code);
-  });
+
+    console.log(data)
 }
 
 app.post("/user", async (req, res) => {
@@ -80,6 +61,7 @@ app.post("/user", async (req, res) => {
       if (data.length > 0) {
         currentUserId = data[0].id;
         console.log("User exists. Current user id ", currentUserId);
+        res.redirect("/");
       }
     } catch (err) {
       console.error("Unexpected error: ", err);
@@ -110,26 +92,7 @@ app.post("/new", (req, res) => {
 });
 
 app.get("/", async (req, res) => {
-  try {
-    const userList = await getUsersList();
-    const currentUser = await getCurrentUser();
-    const countries = await checkedCountries();
-    const { data, error } = await supabase.from("countries").select("*");
 
-    if (error) {
-      console.log("Error", error);
-    } else {
-      res.render("index.ejs", {
-        users: users,
-        error: error,
-        color: users.color,
-        total: 2,
-        countries: countries,
-      });
-    }
-  } catch (error) {
-    console.error("Unexpected error", error);
-  }
 });
 
 app.post("/add", async (req, res) => {
