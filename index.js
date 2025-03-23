@@ -33,22 +33,20 @@ async function getUsersList() {
 }
 
 async function getCurrentUser() {
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("id", currentUserId);
-  if (error) {
-    console.log("Error fetching user");
-    return;
-  }
-
-  if (data.length === 0) {
-    console.log("No user found");
-    return;
-  }
-
-  // return data[0];
-  console.log("LINE 51" + data[0]);
+  //   const { data, error } = await supabase
+  //     .from("users")
+  //     .select("*")
+  //     .eq("id", currentUserId);
+  //   if (error) {
+  //     console.log("Error fetching user");
+  //     return;
+  //   }
+  //   if (data.length === 0) {
+  //     console.log("No user found");
+  //     return;
+  //   }
+  //   // return data[0];
+  //   console.log("LINE 51" + data[0]);
 }
 
 async function checkedCountries() {
@@ -61,11 +59,55 @@ async function checkedCountries() {
   });
 }
 
-app.post("/user", (req, res) => {
-    currentUserId = req.body.user;
-    console.log("LINE 66 " + currentUserId)
-    res.redirect("/")
-})
+app.post("/user", async (req, res) => {
+  // res.render("new.ejs");
+  const userId = req.body.user;
+  const addNew = req.body.add;
+
+  if (addNew === "new") {
+    res.render("new.ejs");
+  } else {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", userId);
+      if (error) {
+        console.error("Error checking user exists ", error);
+        res.status(500).json({ error: "Error checking user exists" });
+      }
+
+      if (data.length > 0) {
+        currentUserId = data[0].id;
+        console.log("User exists. Current user id ", currentUserId);
+      }
+    } catch (err) {
+      console.error("Unexpected error: ", err);
+      res.status(500).json({ error: "Something went wrong" });
+    }
+  }
+});
+
+app.post("/new", (req, res) => {
+  const userName = req.body.name;
+  const color = req.body.color;
+
+  supabase
+    .from("users")
+    .insert([{ name: userName, color: color }])
+    .then(({ error, data }) => {
+      if (error) {
+        console.log("Error inserting record ", error);
+        return res.status(400).json({ error: error.message });
+      }
+      console.log("Record inserted succesfully ", data);
+      res.redirect("/");
+    })
+    .catch((err) => {
+      console.log("Unexpected error " + err);
+      res.status(500).json({ error: "Something went wrong" });
+    });
+});
 
 app.get("/", async (req, res) => {
   try {
@@ -121,40 +163,7 @@ app.post("/add", async (req, res) => {
   }
 });
 
-app.post("/new", (req, res) => {
-  const newUser = req.body.name;
-  const color = req.body.color;
-
-  if (!newUser || !color) {
-    return res.status(400).json({ error: "Name and colour required" });
-  }
-
-  supabase
-    .from("users")
-    .insert([
-      {
-        name: newUser,
-        color: color,
-      },
-    ])
-    .then(({ data, error }) => {
-      if (error) {
-        console.error("Error inserting data", error);
-        return res.status(400).json({ error: error.message });
-      }
-
-      console.log("Data inserted succesfully!", data);
-      getUsersList();
-      res.status(200).redirect("/");
-    })
-    .catch((err) => {
-      console.error("Unexpected Error", err);
-      res.status(500).json({ error: "Something went wrong" });
-    });
-});
-
-// app.post("/new", (req, res) => {
-//     const newUser = req.body.name;
+app.post("/new", (req, res) => {});
 
 app.listen(port, () => {
   console.log("Listening on port " + port);
