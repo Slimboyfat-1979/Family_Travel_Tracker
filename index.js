@@ -19,25 +19,42 @@ const port = process.env.PORT || 3000;
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 
+let currentUserId = null;
+
 let users = [
   { id: 1, name: "Tom Jones", color: "red" },
   { id: 2, name: "Henry Smith", color: "green" },
 ];
 
-let currentUserId = null;
-
 async function getUsersList() {
   const { data, error } = await supabase.from("users").select("*");
-  users = data;
+  if (error) {
+    console.error("Error fetching users:", error);
+    return [];
+  }
+  return data;
 }
 
-async function checkedCountries() {
+async function checkCurrentUser() {
+  if (currentUserId === null) {
+    const { data } = await supabase
+      .from("users")
+      .select("id")
+      .order("id", { ascending: true })
+      .limit(1);
+    if (data && data.length > 0) {
+      currentUserId = data[0].id;
+    }
+  }
+}
+
+async function checkedCountries() {   
   const { data, error } = await supabase
     .from("visited_countries")
     .select("country_code")
     .eq("user_id", currentUserId);
 
-    console.log(data)
+    return data
 }
 
 app.post("/user", async (req, res) => {
@@ -60,7 +77,7 @@ app.post("/user", async (req, res) => {
 
       if (data.length > 0) {
         currentUserId = data[0].id;
-        console.log("User exists. Current user id ", currentUserId);
+        console.log("User exists. Current user id ", currentUserId + " " + data[0].color);
         res.redirect("/");
       }
     } catch (err) {
@@ -92,7 +109,23 @@ app.post("/new", (req, res) => {
 });
 
 app.get("/", async (req, res) => {
+  await checkCurrentUser();
+  const fetchedUsers = await getUsersList();
+  const countries = await checkedCountries();
+  let countryCodes = [];
 
+
+  countries.forEach(country => {
+    countryCodes.push(country.country_code)
+  })  
+
+  res.render("index.ejs", {
+    users: fetchedUsers,
+    error: "Populate error here",
+    color: 'red',
+    total: countryCodes.length,
+    countries: countryCodes
+  })
 });
 
 app.post("/add", async (req, res) => {
