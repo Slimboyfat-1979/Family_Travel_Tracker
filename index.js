@@ -20,11 +20,9 @@ app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 let currentUserId = null;
+let currentUserColor = null;
 
-let users = [
-  { id: 1, name: "Tom Jones", color: "red" },
-  { id: 2, name: "Henry Smith", color: "green" },
-];
+checkCurrentUser();
 
 async function getUsersList() {
   const { data, error } = await supabase.from("users").select("*");
@@ -44,17 +42,19 @@ async function checkCurrentUser() {
       .limit(1);
     if (data && data.length > 0) {
       currentUserId = data[0].id;
+      currentUserColor = data[0].color;
+      console.log(currentUserColor)
     }
   }
 }
 
-async function checkedCountries() {   
+async function checkedCountries() {
   const { data, error } = await supabase
     .from("visited_countries")
     .select("country_code")
     .eq("user_id", currentUserId);
 
-    return data
+  return data;
 }
 
 app.post("/user", async (req, res) => {
@@ -77,7 +77,10 @@ app.post("/user", async (req, res) => {
 
       if (data.length > 0) {
         currentUserId = data[0].id;
-        console.log("User exists. Current user id ", currentUserId + " " + data[0].color);
+        console.log(
+          "User exists. Current user id ",
+          currentUserId + " " + data[0].color
+        );
         res.redirect("/");
       }
     } catch (err) {
@@ -113,54 +116,119 @@ app.get("/", async (req, res) => {
   const fetchedUsers = await getUsersList();
   const countries = await checkedCountries();
   let countryCodes = [];
-
-
-  countries.forEach(country => {
-    countryCodes.push(country.country_code)
-  })  
+  
+  countries.forEach((country) => {
+    countryCodes.push(country.country_code);
+  });
 
   res.render("index.ejs", {
     users: fetchedUsers,
     error: "Populate error here",
-    color: 'red',
+    color: 'yellow',
     total: countryCodes.length,
-    countries: countryCodes
-  })
+    countries: countryCodes,
+  });
 });
 
 app.post("/add", async (req, res) => {
-  const country = req.body.country;
+    console.log("LINE 135 ", currentUserId);
+    const country = req.body.country;
+    try {
+        const {data, error} = await supabase.from('countries')
+        .select('country_code')
+        .ilike('country_name', "%" + country.toLowerCase() + "%");
 
-  const { data, error } = await supabase
-    .from("countries")
-    .select("country_code")
-    .filter("country_name", "ilike", country.toLowerCase());
+        if(!data || data.length === 0) {
+            return res.status(400).json({error: "Country not found"})
+        }else{
+            const {country_code} = data[0];
+            console.log(country_code);
+            try {
+                await supabase.from('visited_countries').insert([
+                    {country_code: country_code, user_id: currentUserId}
+                ]);
+            }catch(error) {
+                console.log("ERROR " + error);
+            }
+        }
+    }catch(error) {
 
-  if (error) {
-    console.error("Error:", error);
-  } else {
-    console.log("Data:", data);
-  }
+    }
+    res.render("index.ejs")
 
-  const { country_code } = data[0];
 
-  console.log(country_code);
-
-  try {
-    await supabase.from("visited_countries").insert([
-      {
-        country_code: country_code,
-        user_id: currentUserId,
-      },
-    ]);
-    res.redirect("/");
-  } catch (error) {
-    console.log(error);
-  }
 });
+
+
+
 
 app.post("/new", (req, res) => {});
 
 app.listen(port, () => {
   console.log("Listening on port " + port);
 });
+
+//   if(error) {
+//     console.log("Error " + error);
+//   }else{
+//     const {country_code} = data[0];
+//     try {
+//         await supabase.from('visited_countries').insert([
+//             {country_code: country_code, user_id: currentUserId}
+//         ]);
+//     }catch(error){
+//         console.log(error);
+//     }
+//     res.redirect("/")
+//   }
+
+//   const { data, error } = await supabase
+//     .from("countries")
+//     .select("country_code")
+//     .filter("country_name", "ilike", country.toLowerCase());
+
+//   if (error) {
+//     console.error("Error:", error);
+//   } else {
+//     console.log("Data:", data);
+//   }
+
+//   const { country_code } = data[0];
+
+//   console.log(country_code);
+
+//   try {
+//     await supabase.from("visited_countries").insert([
+//       {
+//         country_code: country_code,
+//         user_id: currentUserId,
+//       },
+//     ]);
+//     res.redirect("/");
+//   } catch (error) {
+//     console.log(error);
+//   }
+
+//   const country = req.body.country;
+//   const { data, error } = await supabase.from('countries')
+//     .select('country_code')
+//     .ilike('country_name', '%' + country.toLowerCase() + '%');
+
+//   if (error) {
+//     console.error("Error fetching country code:", error);
+//     return res.status(500).json({ error: "Error fetching country code" });
+//   }
+
+//   if (data && data.length > 0) {
+//     const { country_code } = data[0];
+//     try {
+//       await supabase.from('visited_countries').insert([
+//         { country_code: country_code, user_id: currentUserId }
+//       ]);
+//     } catch (insertError) {
+//       console.error("Error inserting visited country:", insertError);
+//       return res.status(500).json({ error: "Error inserting visited country" });
+//     }
+//   }
+
+//   res.redirect("/")
