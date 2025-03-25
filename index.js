@@ -11,84 +11,151 @@ const key = process.env.SUPABASE_KEY;
 
 const supabase = createClient(url, key);
 
-console.log(url, key);
-
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 
-let currentUserId = null;
-let currentUserColor = null;
+let currentUser = null;
+let error = null;
 
-checkCurrentUser();
-
-async function getUsersList() {
-  const { data, error } = await supabase.from("users").select("*");
-  if (error) {
-    console.error("Error fetching users:", error);
-    return [];
-  }
-  return data;
+async function initialiseApp() {
+    if(currentUser === null) {
+        currentUser = await checkCurrentUser();
+    }
+   
 }
+
+initialiseApp().then(() => {
+    app.get("/", async (req, res) => {
+        const fetchedUsers = await getUsersList();
+        const countries = await checkedCountries();
+        res.render("index.ejs", {
+            users:fetchedUsers,
+            error: error,
+            color: currentUser.color,
+            countries: countries,
+            total: countries.length
+        })
+    })
+
+    app.post("/user", async (req, res) => {
+        // console.log(req.body.user);
+        // console.log(req.body.add)
+        if(req.body.user) {
+            const {data, error} = await supabase.from('visited_countries').select('*').eq('id', currentUser.id);
+            console.log(data)
+        }
+        if(req.body.add) {
+            res.render("new.ejs")
+        }
+    })
+})
 
 async function checkCurrentUser() {
-  if (currentUserId === null) {
-    const { data } = await supabase
-      .from("users")
-      .select("id")
-      .order("id", { ascending: true })
-      .limit(1);
-    if (data && data.length > 0) {
-      currentUserId = data[0].id;
-      currentUserColor = data[0].color;
-      console.log(currentUserColor)
-    }
-  }
-}
-
-async function checkedCountries() {
-  const { data, error } = await supabase
-    .from("visited_countries")
-    .select("country_code")
-    .eq("user_id", currentUserId);
-
-  return data;
-}
-
-app.post("/user", async (req, res) => {
-  // res.render("new.ejs");
-  const userId = req.body.user;
-  const addNew = req.body.add;
-
-  if (addNew === "new") {
-    res.render("new.ejs");
-  } else {
-    try {
-      const { data, error } = await supabase
+    if (currentUser === null) {
+      const { data } = await supabase
         .from("users")
         .select("*")
-        .eq("id", userId);
-      if (error) {
-        console.error("Error checking user exists ", error);
-        res.status(500).json({ error: "Error checking user exists" });
+        .order("id", { ascending: true })
+        .limit(1);
+      if (data && data.length > 0) {
+        return data[0];
       }
-
-      if (data.length > 0) {
-        currentUserId = data[0].id;
-        console.log(
-          "User exists. Current user id ",
-          currentUserId + " " + data[0].color
-        );
-        res.redirect("/");
-      }
-    } catch (err) {
-      console.error("Unexpected error: ", err);
-      res.status(500).json({ error: "Something went wrong" });
     }
   }
-});
+
+  async function getUsersList() {
+    const { data, error } = await supabase.from("users").select("*");
+    if (error) {
+      console.error("Error fetching users:", error);
+      return [];
+    }
+    return data;
+  }
+
+  async function checkedCountries() {
+    const { data, error } = await supabase
+      .from("visited_countries")
+      .select("country_code")
+      .eq("user_id", currentUser.id);
+  
+    return data;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// app.post("/user", async (req, res) => {
+//   // res.render("new.ejs");
+//   const userId = req.body.user;
+//   const addNew = req.body.add;
+
+//   if (addNew === "new") {
+//     res.render("new.ejs");
+//   } else {
+//     try {
+//       const { data, error } = await supabase
+//         .from("users")
+//         .select("*")
+//         .eq("id", userId);
+//       if (error) {
+//         console.error("Error checking user exists ", error);
+//         res.status(500).json({ error: "Error checking user exists" });
+//       }
+
+//       if (data.length > 0) {
+//         currentUserId = data[0].id;
+//         console.log(
+//           "User exists. Current user id ",
+//           currentUserId + " " + data[0].color
+//         );
+//         res.redirect("/");
+//       }
+//     } catch (err) {
+//       console.error("Unexpected error: ", err);
+//       res.status(500).json({ error: "Something went wrong" });
+//     }
+//   }
+// });
 
 app.post("/new", (req, res) => {
   const userName = req.body.name;
@@ -111,24 +178,24 @@ app.post("/new", (req, res) => {
     });
 });
 
-app.get("/", async (req, res) => {
-  await checkCurrentUser();
-  const fetchedUsers = await getUsersList();
-  const countries = await checkedCountries();
-  let countryCodes = [];
+// app.get("/", async (req, res) => {
+//   await checkCurrentUser();
+//   const fetchedUsers = await getUsersList();
+//   const countries = await checkedCountries();
+//   let countryCodes = [];
   
-  countries.forEach((country) => {
-    countryCodes.push(country.country_code);
-  });
+//   countries.forEach((country) => {
+//     countryCodes.push(country.country_code);
+//   });
 
-  res.render("index.ejs", {
-    users: fetchedUsers,
-    error: "Populate error here",
-    color: 'yellow',
-    total: countryCodes.length,
-    countries: countryCodes,
-  });
-});
+//   res.render("index.ejs", {
+//     users: fetchedUsers,
+//     error: "Populate error here",
+//     color: currentUser.color,
+//     total: countryCodes.length,
+//     countries: countryCodes,
+//   });
+// });
 
 app.post("/add", async (req, res) => {
     console.log("LINE 135 ", currentUserId);
