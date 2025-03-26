@@ -21,11 +21,9 @@ let currentUser = null;
 let error = null;
 
 async function initialiseApp() {
-    if(currentUser === null) {
         currentUser = await checkCurrentUser();
-    }
-   
 }
+
 
 initialiseApp().then(() => {
     app.get("/", async (req, res) => {
@@ -41,11 +39,13 @@ initialiseApp().then(() => {
     })
 
     app.post("/user", async (req, res) => {
-        // console.log(req.body.user);
-        // console.log(req.body.add)
         if(req.body.user) {
-            const {data, error} = await supabase.from('visited_countries').select('*').eq('id', currentUser.id);
-            console.log(data)
+            console.log(req.body.user)
+            const user = await checkCurrentUser(req.body.user);
+            const {data, error} = await supabase.from('visited_countries').select('*').eq('user_id', user.id);
+            console.log("This is the data" + data[0].country_code);
+            // const {data, error} = await supabase.from('visited_countries').select('*').eq('id', currentUser.id);
+            // console.log(data)
         }
         if(req.body.add) {
             res.render("new.ejs")
@@ -53,7 +53,7 @@ initialiseApp().then(() => {
     })
 })
 
-async function checkCurrentUser() {
+async function checkCurrentUser(userId) {
     if (currentUser === null) {
       const { data } = await supabase
         .from("users")
@@ -63,6 +63,9 @@ async function checkCurrentUser() {
       if (data && data.length > 0) {
         return data[0];
       }
+    }else{
+        const {data} = await supabase.from('users').select('*').eq('id', userId);
+        return data[0];
     }
   }
 
