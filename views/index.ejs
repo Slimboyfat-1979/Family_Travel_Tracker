@@ -928,10 +928,12 @@
     </section>
     <h2 class="total-count">Total Countries: <%=total%></h2>
     <script>
-        const country_codes = "<%= countries %>".split(",");
-        country_codes.forEach((code) => {
-            document.getElementById(code).style.fill = "<%= color %>"
-        })
+      const countries = <%- JSON.stringify(countries) %>;
+      const countryCodes = countries.map(code => code.country_code);
+      countryCodes.forEach(code => {
+        document.getElementById(code).style.fill = "<%= color %>"
+      })
     </script>
   </body>
 </html>
+
